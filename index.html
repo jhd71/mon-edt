@@ -570,12 +570,12 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   "use strict";
 
   /* =====================================================================
-     CONFIGURATION — les 4 seules lignes à remplir
+     CONFIGURATION — voir le README pour changer le code
      ===================================================================== */
   var CONFIG = {
     SUPABASE_URL:      "https://ekjgfiyhkythqcnmhzea.supabase.co",
     SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVramdmaXloa3l0aHFjbm1oemVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI2NzYxNDIsImV4cCI6MjA1ODI1MjE0Mn0.V0j_drb6GiTojgwxC6ydjnyJDRRT9lUbSc1E7bFE2Z4",
-    CODE_MODIF:        "1234",
+    CODE_HASH:        "83e19a9ce479dc064bab4bd50134db14918cc967debd3ad223bb8993c523788d",
     TABLE:             "edt_soleane",
     ROW_ID:            "soleane"
   };
@@ -743,31 +743,53 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
       .subscribe();
   }
 
-  /* ============ code de modification ============ */
+  /* ============ code de modification (empreinte SHA-256) ============ */
   var CODE_KEY = "edt-soleane-code-ok";
   var codeDlg = document.getElementById("codeDlg");
 
+  // Transforme le code tapé en empreinte : le code lui-même n'est jamais dans la page.
+  function empreinte(texte){
+    if(!(window.crypto && crypto.subtle && window.TextEncoder)) return Promise.resolve(null);
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(texte)).then(function(buf){
+      return Array.prototype.map.call(new Uint8Array(buf), function(o){
+        return ("0" + o.toString(16)).slice(-2);
+      }).join("");
+    });
+  }
   function codeAlreadyOk(){
-    try{ return localStorage.getItem(CODE_KEY) === CONFIG.CODE_MODIF; }catch(e){ return false; }
+    try{ return localStorage.getItem(CODE_KEY) === CONFIG.CODE_HASH; }catch(e){ return false; }
   }
   function askCode(onOk){
-    if(!CONFIG.CODE_MODIF || codeAlreadyOk()){ onOk(); return; }
+    if(!CONFIG.CODE_HASH || codeAlreadyOk()){ onOk(); return; }
     document.getElementById("codeInput").value = "";
     document.getElementById("codeError").hidden = true;
+    document.getElementById("codeError").textContent = "Code incorrect.";
     codeDlg.showModal();
     setTimeout(function(){ document.getElementById("codeInput").focus(); }, 30);
     codeDlg.onOk = onOk;
   }
   function validateCode(){
-    var v = document.getElementById("codeInput").value.trim();
-    if(v === CONFIG.CODE_MODIF){
-      try{ localStorage.setItem(CODE_KEY, v); }catch(e){}
-      codeDlg.close();
-      if(codeDlg.onOk) codeDlg.onOk();
-    }else{
-      document.getElementById("codeError").hidden = false;
-      document.getElementById("codeInput").select();
-    }
+    var champ = document.getElementById("codeInput");
+    var err = document.getElementById("codeError");
+    var bouton = document.getElementById("codeOk");
+    bouton.disabled = true;
+    empreinte(champ.value.trim()).then(function(h){
+      bouton.disabled = false;
+      if(h === null){
+        err.textContent = "Vérification impossible ici : ouvrez la page en https.";
+        err.hidden = false;
+        return;
+      }
+      if(h === CONFIG.CODE_HASH){
+        try{ localStorage.setItem(CODE_KEY, h); }catch(e){}
+        codeDlg.close();
+        if(codeDlg.onOk) codeDlg.onOk();
+      }else{
+        err.textContent = "Code incorrect.";
+        err.hidden = false;
+        champ.select();
+      }
+    });
   }
   document.getElementById("codeOk").addEventListener("click", validateCode);
   document.getElementById("codeCancel").addEventListener("click", function(){ codeDlg.close(); });
