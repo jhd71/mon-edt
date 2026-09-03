@@ -8,6 +8,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#FAF5FA" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#171223" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Emploi du temps">
 <link rel="manifest" href="manifest.json">
@@ -279,7 +280,7 @@ button.card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
 .card .c-subject{
   font-weight:800;font-size:14.5px;line-height:1.2;
   color:hsl(var(--h) var(--chip-fg-s) var(--chip-fg-l));
-  overflow-wrap:anywhere;
+  overflow-wrap:break-word;
 }
 .card .c-meta{
   margin-top:3px;font-size:12.5px;font-weight:600;
@@ -335,9 +336,9 @@ button.card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
   display:grid;place-items:center;
   font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);
 }
-.cellstack{display:flex;gap:5px;min-width:0}
-.cellstack > *{flex:1 1 0;min-width:0}
-.week .card{height:100%}
+.cellstack{display:flex;flex-direction:column;gap:5px;min-width:0}
+.cellstack > *{min-width:0}
+.week .cellstack > .card:only-child{height:100%}
 .week .card .c-subject{font-size:13px}
 .week .card .c-meta{font-size:11.5px;flex-direction:column;gap:1px}
 .slot-empty{
@@ -745,6 +746,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
 
   /* ============ code de modification (empreinte SHA-256) ============ */
   var CODE_KEY = "edt-soleane-code-ok";
+  try{ localStorage.removeItem(CODE_KEY); }catch(e){}   // ancienne mémorisation permanente
   var codeDlg = document.getElementById("codeDlg");
 
   // Transforme le code tapé en empreinte : le code lui-même n'est jamais dans la page.
@@ -757,7 +759,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     });
   }
   function codeAlreadyOk(){
-    try{ return localStorage.getItem(CODE_KEY) === CONFIG.CODE_HASH; }catch(e){ return false; }
+    try{ return sessionStorage.getItem(CODE_KEY) === CONFIG.CODE_HASH; }catch(e){ return false; }
   }
   function askCode(onOk){
     if(!CONFIG.CODE_HASH || codeAlreadyOk()){ onOk(); return; }
@@ -781,7 +783,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
         return;
       }
       if(h === CONFIG.CODE_HASH){
-        try{ localStorage.setItem(CODE_KEY, h); }catch(e){}
+        try{ sessionStorage.setItem(CODE_KEY, h); }catch(e){}
         codeDlg.close();
         if(codeDlg.onOk) codeDlg.onOk();
       }else{
