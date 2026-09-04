@@ -8,6 +8,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#FAF5FA" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#171223" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Emploi du temps">
 <link rel="manifest" href="manifest.json">
@@ -245,10 +246,12 @@ h1{
 .daylist{margin:16px 0 0;display:flex;flex-direction:column;gap:9px}
 .dayrow{display:grid;grid-template-columns:52px 1fr;gap:11px;align-items:start}
 .hourtag{
-  font-family:"DM Mono",ui-monospace,monospace;font-size:12.5px;font-weight:500;
-  color:var(--ink-3);padding-top:13px;text-align:right;font-variant-numeric:tabular-nums;
+  display:flex;flex-direction:column;align-items:flex-end;gap:0;padding-top:12px;
+  font-family:"DM Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;
 }
-.dayrow[data-current="1"] .hourtag{color:var(--now);font-weight:700}
+.hourtag b{font-style:normal;font-size:12.5px;font-weight:500;color:var(--ink-2);line-height:1.25}
+.hourtag i{font-style:normal;font-size:10.5px;font-weight:400;color:var(--ink-3);line-height:1.25}
+.dayrow[data-current="1"] .hourtag b{color:var(--now);font-weight:700}
 .dayrow-cards{display:flex;flex-direction:column;gap:7px;min-width:0}
 
 .lunch{
@@ -279,7 +282,7 @@ button.card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
 .card .c-subject{
   font-weight:800;font-size:14.5px;line-height:1.2;
   color:hsl(var(--h) var(--chip-fg-s) var(--chip-fg-l));
-  overflow-wrap:anywhere;
+  overflow-wrap:break-word;
 }
 .card .c-meta{
   margin-top:3px;font-size:12.5px;font-weight:600;
@@ -322,11 +325,12 @@ button.card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
   font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--now);
 }
 .hcell{
-  grid-column:1;display:flex;justify-content:flex-end;padding-top:4px;
-  font-family:"DM Mono",ui-monospace,monospace;font-size:11.5px;color:var(--ink-3);
-  font-variant-numeric:tabular-nums;
+  grid-column:1;display:flex;flex-direction:column;align-items:flex-end;padding-top:3px;
+  font-family:"DM Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;
 }
-.hcell[data-current="1"]{color:var(--now);font-weight:500}
+.hcell b{font-style:normal;font-size:11.5px;font-weight:500;color:var(--ink-3);line-height:1.2}
+.hcell i{font-style:normal;font-size:9.5px;font-weight:400;color:var(--ink-3);opacity:.65;line-height:1.2}
+.hcell[data-current="1"] b{color:var(--now)}
 .lunchband{
   grid-column:2/-1;grid-row:6/span 2;align-self:stretch;
   border-radius:var(--r-sm);
@@ -335,9 +339,9 @@ button.card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
   display:grid;place-items:center;
   font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);
 }
-.cellstack{display:flex;gap:5px;min-width:0}
-.cellstack > *{flex:1 1 0;min-width:0}
-.week .card{height:100%}
+.cellstack{display:flex;flex-direction:column;gap:5px;min-width:0}
+.cellstack > *{min-width:0}
+.week .cellstack > .card:only-child{height:100%}
 .week .card .c-subject{font-size:13px}
 .week .card .c-meta{font-size:11.5px;flex-direction:column;gap:1px}
 .slot-empty{
@@ -403,6 +407,44 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
 }
 .sheet-foot .spacer{flex:1}
 
+
+/* ---------- bouton et fenêtre Apparence ---------- */
+.icon-btn{
+  width:36px;height:36px;flex:none;display:grid;place-items:center;
+  border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-2);
+  border-radius:12px;cursor:pointer;box-shadow:var(--shadow-sm);
+  transition:background .16s ease,color .16s ease;
+}
+.icon-btn:hover{background:var(--surface-2);color:var(--ink)}
+.seg-wide{width:100%}
+.seg-wide button{flex:1 1 0;text-align:center;padding:8px 6px}
+.look-preview{display:flex;gap:7px;margin-top:2px}
+.look-preview .card{flex:1 1 0;padding:9px 10px}
+.look-preview .c-subject{font-size:12.5px}
+.look-preview .c-meta{font-size:11px}
+
+/* ---------- style « Vif » : fonds saturés, texte blanc ---------- */
+:root[data-skin="vif"] .card,
+:root[data-skin="vif"] .nb-course,
+:root[data-skin="vif"] .legend-swatch,
+:root[data-skin="vif"] .swatch{
+  --chip-s:58%;
+  --chip-l:var(--lv,46%);
+  --chip-line-s:58%;
+  --chip-line-l:calc(var(--lv,46%) - 9%);
+  --chip-fg-s:0%; --chip-fg-l:100%;
+  --chip-mut-s:0%; --chip-mut-l:90%;
+  --badge-s:0%; --badge-l:100%;
+  --badge-fg-s:55%; --badge-fg-l:30%;
+  --badge-line-s:0%; --badge-line-l:100%;
+}
+:root[data-skin="vif"] .card{
+  border-left-color:hsl(var(--h) 58% calc(var(--lv,46%) - 14%));
+  box-shadow:var(--shadow-sm);
+}
+:root[data-skin="vif"] .card .c-subject{font-weight:800}
+:root[data-skin="vif"] .wk-badge{font-weight:800}
+
 @media (max-width:620px){
   .wrap{padding:14px 11px 56px}
   .masthead-side{margin-left:0;width:100%}
@@ -412,7 +454,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   *{transition:none!important;animation:none!important}
 }
 @media print{
-  .controls,.daytabs,.nowbar,.editnote,.pill-sync,.slot-empty{display:none!important}
+  .controls,.daytabs,.nowbar,.editnote,.pill-sync,.slot-empty,.icon-btn{display:none!important}
   body{background:#fff}
   .weekscroll{overflow:visible}
   .week{min-width:0}
@@ -421,6 +463,16 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
 </style>
 </head>
 <body>
+<script>
+/* Applique le thème enregistré avant le premier affichage, pour éviter un clignotement. */
+(function(){
+  try{
+    var l = JSON.parse(localStorage.getItem("edt-soleane-look") || "{}");
+    if(l.theme && l.theme !== "auto") document.documentElement.setAttribute("data-theme", l.theme);
+    document.documentElement.setAttribute("data-skin", l.skin || "pastel");
+  }catch(e){ document.documentElement.setAttribute("data-skin","pastel"); }
+})();
+</script>
 
 
 <div class="wrap">
@@ -434,6 +486,15 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
       </div>
     </div>
     <div class="masthead-side">
+      <button type="button" class="icon-btn" id="btnLook" aria-label="Apparence" title="Apparence">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+             stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3a9 9 0 1 0 0 18c1 0 1.6-.7 1.6-1.5 0-.5-.2-.8-.5-1.1-.3-.3-.5-.7-.5-1.1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8Z"/>
+          <circle cx="7.6" cy="11.2" r="1.1" fill="currentColor" stroke="none"/>
+          <circle cx="11" cy="7.6" r="1.1" fill="currentColor" stroke="none"/>
+          <circle cx="15.4" cy="8.6" r="1.1" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
       <span class="pill-sync" id="syncPill" data-state="local"><span class="dot"></span><span id="syncText">Cet appareil</span></span>
     </div>
   </header>
@@ -545,6 +606,37 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   </form>
 </dialog>
 
+<dialog id="lookDlg">
+  <form method="dialog" class="sheet">
+    <div class="sheet-head"><h2>Apparence</h2></div>
+    <div class="sheet-body">
+      <div class="field">
+        <label>Thème</label>
+        <div class="seg seg-wide" id="segTheme" role="group" aria-label="Thème">
+          <button type="button" data-look-theme="auto">Automatique</button>
+          <button type="button" data-look-theme="light">Clair</button>
+          <button type="button" data-look-theme="dark">Sombre</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Style des cours</label>
+        <div class="seg seg-wide" id="segSkin" role="group" aria-label="Style des cours">
+          <button type="button" data-look-skin="pastel">Pastel</button>
+          <button type="button" data-look-skin="vif">Couleurs vives</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Aperçu</label>
+        <div class="look-preview" id="lookPreview"></div>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <span class="spacer"></span>
+      <button type="button" class="btn btn-primary" id="lookClose">Terminé</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="codeDlg">
   <form method="dialog" class="sheet" id="codeForm">
     <div class="sheet-head"><h2>Code de modification</h2></div>
@@ -570,12 +662,12 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   "use strict";
 
   /* =====================================================================
-     CONFIGURATION — les 4 seules lignes à remplir
+     CONFIGURATION — voir le README pour changer le code
      ===================================================================== */
   var CONFIG = {
     SUPABASE_URL:      "https://ekjgfiyhkythqcnmhzea.supabase.co",
     SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVramdmaXloa3l0aHFjbm1oemVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI2NzYxNDIsImV4cCI6MjA1ODI1MjE0Mn0.V0j_drb6GiTojgwxC6ydjnyJDRRT9lUbSc1E7bFE2Z4",
-    CODE_MODIF:        "1234",
+    CODE_HASH:        "83e19a9ce479dc064bab4bd50134db14918cc967debd3ad223bb8993c523788d",
     TABLE:             "edt_soleane",
     ROW_ID:            "soleane"
   };
@@ -584,8 +676,22 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   /* ============ modèle ============ */
   const DAYS = ["lundi","mardi","mercredi","jeudi","vendredi"];
   const DAYS_SHORT = ["Lun","Mar","Mer","Jeu","Ven"];
-  const SLOT_LABELS = ["8h00","9h00","10h00","11h00","12h00","13h00","14h00","15h00","16h00"];
-  const LUNCH_SLOTS = [4,5];
+  // Horaires réels du collège. Pour les changer, modifiez uniquement ce tableau.
+  const SLOTS = [
+    { debut: "8h00",  fin: "9h00"  },
+    { debut: "9h00",  fin: "10h00" },
+    { debut: "10h00", fin: "11h00" },
+    { debut: "11h00", fin: "12h00" },
+    { debut: "12h00", fin: "12h45", pause: true },
+    { debut: "12h45", fin: "13h30", pause: true },
+    { debut: "13h30", fin: "14h30" },
+    { debut: "14h30", fin: "15h30" },
+    { debut: "15h30", fin: "16h30" }
+  ];
+  const SLOT_LABELS = SLOTS.map(function(c){ return c.debut; });
+  const LUNCH_SLOTS = SLOTS.map(function(c,i){ return c.pause ? i : -1; })
+                           .filter(function(i){ return i >= 0; });
+  function minutes(h){ var p = String(h).split("h"); return (+p[0])*60 + (+(p[1]||0)); }
   const HUES = [0,30,55,100,130,152,172,190,205,232,262,292,322,245];
 
   const SUBJECT_HUE = {
@@ -743,31 +849,111 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
       .subscribe();
   }
 
-  /* ============ code de modification ============ */
+
+  /* ============ apparence : thème et style ============ */
+  var LOOK_KEY = "edt-soleane-look";
+  var look = { theme: "auto", skin: "pastel" };
+  var lookDlg = document.getElementById("lookDlg");
+
+  function loadLook(){
+    try{
+      var r = localStorage.getItem(LOOK_KEY);
+      if(r){ var o = JSON.parse(r); if(o.theme) look.theme = o.theme; if(o.skin) look.skin = o.skin; }
+    }catch(e){}
+  }
+  function applyLook(){
+    var el = document.documentElement;
+    if(look.theme === "auto") el.removeAttribute("data-theme");
+    else el.setAttribute("data-theme", look.theme);
+    el.setAttribute("data-skin", look.skin);
+    try{ localStorage.setItem(LOOK_KEY, JSON.stringify(look)); }catch(e){}
+    paintLook();
+  }
+  function paintLook(){
+    Array.prototype.forEach.call(document.querySelectorAll("[data-look-theme]"), function(b){
+      b.setAttribute("aria-pressed", b.dataset.lookTheme === look.theme);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-look-skin]"), function(b){
+      b.setAttribute("aria-pressed", b.dataset.lookSkin === look.skin);
+    });
+    var apercu = [
+      { subject: "Mathématiques", teacher: "Anfosso J.", room: "202", h: 152 },
+      { subject: "Anglais LV1",   teacher: "Rouane H.",  room: "212", h: 322 },
+      { subject: "Espagnol LV2",  teacher: "Leporini C.", room: "207", h: 55 }
+    ];
+    document.getElementById("lookPreview").innerHTML = apercu.map(function(c){
+      return '<div class="card" style="' + styleTeinte(c.h) + '">' +
+        '<div class="c-subject">' + esc(c.subject) + "</div>" +
+        '<div class="c-meta"><span>' + esc(c.teacher) + "</span></div></div>";
+    }).join("");
+  }
+
+  document.getElementById("btnLook").addEventListener("click", function(){
+    paintLook();
+    lookDlg.showModal();
+  });
+  document.getElementById("lookClose").addEventListener("click", function(){ lookDlg.close(); });
+  document.getElementById("segTheme").addEventListener("click", function(e){
+    var b = e.target.closest("[data-look-theme]");
+    if(!b) return;
+    look.theme = b.dataset.lookTheme;
+    applyLook();
+  });
+  document.getElementById("segSkin").addEventListener("click", function(e){
+    var b = e.target.closest("[data-look-skin]");
+    if(!b) return;
+    look.skin = b.dataset.lookSkin;
+    applyLook();
+  });
+
+  /* ============ code de modification (empreinte SHA-256) ============ */
   var CODE_KEY = "edt-soleane-code-ok";
+  try{ localStorage.removeItem(CODE_KEY); }catch(e){}   // ancienne mémorisation permanente
   var codeDlg = document.getElementById("codeDlg");
 
+  // Transforme le code tapé en empreinte : le code lui-même n'est jamais dans la page.
+  function empreinte(texte){
+    if(!(window.crypto && crypto.subtle && window.TextEncoder)) return Promise.resolve(null);
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(texte)).then(function(buf){
+      return Array.prototype.map.call(new Uint8Array(buf), function(o){
+        return ("0" + o.toString(16)).slice(-2);
+      }).join("");
+    });
+  }
   function codeAlreadyOk(){
-    try{ return localStorage.getItem(CODE_KEY) === CONFIG.CODE_MODIF; }catch(e){ return false; }
+    try{ return sessionStorage.getItem(CODE_KEY) === CONFIG.CODE_HASH; }catch(e){ return false; }
   }
   function askCode(onOk){
-    if(!CONFIG.CODE_MODIF || codeAlreadyOk()){ onOk(); return; }
+    if(!CONFIG.CODE_HASH || codeAlreadyOk()){ onOk(); return; }
     document.getElementById("codeInput").value = "";
     document.getElementById("codeError").hidden = true;
+    document.getElementById("codeError").textContent = "Code incorrect.";
     codeDlg.showModal();
     setTimeout(function(){ document.getElementById("codeInput").focus(); }, 30);
     codeDlg.onOk = onOk;
   }
   function validateCode(){
-    var v = document.getElementById("codeInput").value.trim();
-    if(v === CONFIG.CODE_MODIF){
-      try{ localStorage.setItem(CODE_KEY, v); }catch(e){}
-      codeDlg.close();
-      if(codeDlg.onOk) codeDlg.onOk();
-    }else{
-      document.getElementById("codeError").hidden = false;
-      document.getElementById("codeInput").select();
-    }
+    var champ = document.getElementById("codeInput");
+    var err = document.getElementById("codeError");
+    var bouton = document.getElementById("codeOk");
+    bouton.disabled = true;
+    empreinte(champ.value.trim()).then(function(h){
+      bouton.disabled = false;
+      if(h === null){
+        err.textContent = "Vérification impossible ici : ouvrez la page en https.";
+        err.hidden = false;
+        return;
+      }
+      if(h === CONFIG.CODE_HASH){
+        try{ sessionStorage.setItem(CODE_KEY, h); }catch(e){}
+        codeDlg.close();
+        if(codeDlg.onOk) codeDlg.onOk();
+      }else{
+        err.textContent = "Code incorrect.";
+        err.hidden = false;
+        champ.select();
+      }
+    });
   }
   document.getElementById("codeOk").addEventListener("click", validateCode);
   document.getElementById("codeCancel").addEventListener("click", function(){ codeDlg.close(); });
@@ -789,17 +975,59 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     return SUBJECT_HUE[k];
   }
   function weekLabel(w){ return w === "Q1" ? "A" : w === "Q2" ? "B" : ""; }
+
+  // Deux lignes d'horaires dans la gouttière : début en gras, fin en dessous.
+  function hourTag(s, span){
+    var fin = SLOTS[Math.min(s + (span || 1) - 1, SLOTS.length - 1)].fin;
+    return '<b>' + SLOTS[s].debut + '</b><i>' + fin + '</i>';
+  }
+
+  /* Style « Vif » : fond saturé, texte blanc. La clarté de chaque couleur est
+     calculée pour que le blanc reste lisible dessus, quelle que soit la teinte
+     (un jaune doit être plus foncé qu'un bleu pour le même contraste). */
+  var lumCache = {};
+  function canalLineaire(v){
+    v = v / 255;
+    return v <= 0.03928 ? v/12.92 : Math.pow((v + 0.055)/1.055, 2.4);
+  }
+  function luminance(h, s, l){
+    s /= 100; l /= 100;
+    var c = (1 - Math.abs(2*l - 1)) * s;
+    var x = c * (1 - Math.abs(((h/60) % 2) - 1));
+    var m = l - c/2;
+    var t = h < 60 ? [c,x,0] : h < 120 ? [x,c,0] : h < 180 ? [0,c,x]
+          : h < 240 ? [0,x,c] : h < 300 ? [x,0,c] : [c,0,x];
+    var r = canalLineaire((t[0]+m)*255), g = canalLineaire((t[1]+m)*255), b = canalLineaire((t[2]+m)*255);
+    return 0.2126*r + 0.7152*g + 0.0722*b;
+  }
+  function clarteVive(h){
+    if(lumCache[h] != null) return lumCache[h];
+    var bas = 20, haut = 68, garde = 68;
+    for(var i = 0; i < 14; i++){
+      var mid = (bas + haut) / 2;
+      if(1.05 / (luminance(h, 58, mid) + 0.05) >= 4.6){ garde = mid; bas = mid; }
+      else haut = mid;
+    }
+    lumCache[h] = garde;
+    return garde;
+  }
+  function styleTeinte(h){
+    h = (h != null ? h : 245);
+    return "--h:" + h + ";--lv:" + clarteVive(h).toFixed(1) + "%";
+  }
   function endLabel(c){
-    var end = c.s + (c.n || 1);
-    return SLOT_LABELS[Math.min(end, SLOT_LABELS.length - 1)] || (8 + end) + "h00";
+    var dernier = Math.min(c.s + (c.n || 1) - 1, SLOTS.length - 1);
+    return SLOTS[dernier].fin;
   }
 
   function currentSlot(){
     if(todayIdx < 0) return -1;
     var now = new Date();
-    var h = now.getHours() + now.getMinutes()/60;
-    if(h < 8 || h >= 17) return -1;
-    return Math.floor(h) - 8;
+    var m = now.getHours()*60 + now.getMinutes();
+    for(var i = 0; i < SLOTS.length; i++){
+      if(m >= minutes(SLOTS[i].debut) && m < minutes(SLOTS[i].fin)) return i;
+    }
+    return -1;
   }
 
   /* ============ rendu : carte ============ */
@@ -812,7 +1040,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     if(c.teacher) meta.push('<span>' + esc(c.teacher) + "</span>");
     if(c.room) meta.push('<span class="c-room">Salle ' + esc(c.room) + "</span>");
     if(c.week !== "all") meta.push('<span class="wk-badge">Sem. ' + weekLabel(c.week) + "</span>");
-    return "<" + tag + ' class="card"' + attrs + ' style="--h:' + (c.h != null ? c.h : 245) + '"' +
+    return "<" + tag + ' class="card"' + attrs + ' style="' + styleTeinte(c.h) + '"' +
       (opts.current ? ' data-current="1"' : "") + ">" +
       '<div class="c-subject">' + esc(c.subject) + "</div>" +
       (meta.length ? '<div class="c-meta">' + meta.join("") + "</div>" : "") +
@@ -860,7 +1088,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
       if(c.room) bits.push("salle " + esc(c.room));
       if(c.teacher) bits.push(esc(c.teacher));
       if(c.week !== "all") bits.push("sem. " + weekLabel(c.week));
-      return '<span class="nb-course" style="--h:' + (c.h != null ? c.h : 245) + '"><b>' +
+      return '<span class="nb-course" style="' + styleTeinte(c.h) + '"><b>' +
         esc(c.subject) + "</b>" + (bits.length ? "<span>" + bits.join(" · ") + "</span>" : "") + "</span>";
     }).join("");
   }
@@ -897,7 +1125,8 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     var out = [];
     for(var s = 0; s < 9; s++){
       if(s === 4){
-        out.push('<div class="lunch">Pause méridienne · 12h00 – 14h00</div>');
+        out.push('<div class="lunch">Pause méridienne · ' + SLOTS[LUNCH_SLOTS[0]].debut +
+          " – " + SLOTS[LUNCH_SLOTS[LUNCH_SLOTS.length-1]].fin + "</div>");
       }
       if(LUNCH_SLOTS.indexOf(s) >= 0){
         var lunchHere = list.filter(function(c){ return c.s === s; });
@@ -907,14 +1136,14 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
       if(!here.length){
         if(!editMode) continue;
         if(covered[s]) continue;
-        out.push('<div class="dayrow"><div class="hourtag">' + SLOT_LABELS[s] + "</div>" +
+        out.push('<div class="dayrow"><div class="hourtag">' + hourTag(s, 1) + "</div>" +
           '<div class="dayrow-cards"><button type="button" class="slot-empty" data-add="' +
           selectedDay + ":" + s + '">+ Ajouter un cours</button></div></div>');
         continue;
       }
       var isCur = here.some(function(c){ return cs >= c.s && cs < c.s + (c.n||1); });
       out.push('<div class="dayrow"' + (isCur ? ' data-current="1"' : "") + '>' +
-        '<div class="hourtag">' + SLOT_LABELS[s] + "</div>" +
+        '<div class="hourtag">' + hourTag(s, here[0].n || 1) + "</div>" +
         '<div class="dayrow-cards">' +
         here.map(function(c){ return cardHTML(c, {showHours:(c.n||1) > 1, current:isCur}); }).join("") +
         "</div></div>");
@@ -937,7 +1166,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
 
     for(var s = 0; s < 9; s++){
       out.push('<div class="hcell" style="grid-row:' + (s+2) + '"' +
-        (s === cs ? ' data-current="1"' : "") + ">" + SLOT_LABELS[s] + "</div>");
+        (s === cs ? ' data-current="1"' : "") + ">" + hourTag(s, 1) + "</div>");
     }
     out.push('<div class="lunchband">Pause méridienne</div>');
 
@@ -970,8 +1199,8 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     state.courses.forEach(function(c){
       if(seen[c.subject]) return;
       seen[c.subject] = true;
-      items.push('<span class="legend-item"><span class="legend-swatch" style="--h:' +
-        (c.h != null ? c.h : 245) + '"></span>' + esc(c.subject) + "</span>");
+      items.push('<span class="legend-item"><span class="legend-swatch" style="' +
+        styleTeinte(c.h) + '"></span>' + esc(c.subject) + "</span>");
     });
     document.getElementById("legend").innerHTML = items.join("");
     var dl = document.getElementById("subjectList");
@@ -1002,11 +1231,12 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     document.getElementById("fDay").innerHTML = DAYS.map(function(n,i){
       return '<option value="' + i + '">' + n.charAt(0).toUpperCase() + n.slice(1) + "</option>";
     }).join("");
-    document.getElementById("fSlot").innerHTML = SLOT_LABELS.map(function(l,i){
-      return '<option value="' + i + '">' + l + "</option>";
+    document.getElementById("fSlot").innerHTML = SLOTS.map(function(c,i){
+      return '<option value="' + i + '">' + c.debut + " – " + c.fin +
+             (c.pause ? " (pause)" : "") + "</option>";
     }).join("");
     document.getElementById("swatches").innerHTML = HUES.map(function(h){
-      return '<button type="button" class="swatch" data-hue="' + h + '" style="--h:' + h +
+      return '<button type="button" class="swatch" data-hue="' + h + '" style="' + styleTeinte(h) +
         '" aria-label="Couleur ' + h + '"></button>';
     }).join("");
   }
@@ -1131,6 +1361,8 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
 
   /* ============ démarrage ============ */
   buildSelects();
+  loadLook();
+  applyLook();
   initSync();
   setInterval(renderNow, 60000);
 })();
