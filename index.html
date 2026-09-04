@@ -408,6 +408,35 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
 .sheet-foot .spacer{flex:1}
 
 
+/* ---------- bandeau d'installation ---------- */
+.installbar{
+  margin:16px 0 0;padding:12px 14px;border-radius:var(--r);
+  background:var(--accent-soft);border:1px solid var(--accent);
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.installbar .ib-icon{
+  width:38px;height:38px;flex:none;border-radius:12px;
+  background:linear-gradient(150deg,#FBD9E8,#DCD6F7 55%,#CFEBE3);
+  display:grid;place-items:center;
+  font-family:"Fraunces",Georgia,serif;font-weight:700;font-size:17px;color:#5C3B62;
+}
+.installbar .ib-text{flex:1 1 180px;min-width:0;display:flex;flex-direction:column;gap:2px}
+.installbar .ib-title{display:block;font-weight:800;font-size:14px;color:var(--accent-ink);line-height:1.2}
+.installbar .ib-sub{display:block;font-size:12.5px;font-weight:600;color:var(--ink-2);line-height:1.3}
+.installbar .ib-actions{display:flex;align-items:center;gap:4px;margin-left:auto}
+.installbar .ib-close{
+  border:0;background:transparent;cursor:pointer;color:var(--ink-3);
+  font-size:19px;line-height:1;padding:4px 6px;border-radius:8px;
+}
+.installbar .ib-close:hover{color:var(--ink);background:var(--surface)}
+.howto{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}
+.howto li{font-size:14px;font-weight:600;color:var(--ink);line-height:1.4}
+.howto b{color:var(--accent-ink)}
+.howto-note{
+  margin:0;font-size:12.5px;font-weight:600;color:var(--ink-2);
+  background:var(--surface-2);border-radius:var(--r-sm);padding:9px 11px;
+}
+
 /* ---------- bouton et fenêtre Apparence ---------- */
 .icon-btn{
   width:36px;height:36px;flex:none;display:grid;place-items:center;
@@ -454,7 +483,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   *{transition:none!important;animation:none!important}
 }
 @media print{
-  .controls,.daytabs,.nowbar,.editnote,.pill-sync,.slot-empty,.icon-btn{display:none!important}
+  .controls,.daytabs,.nowbar,.editnote,.pill-sync,.slot-empty,.icon-btn,.installbar{display:none!important}
   body{background:#fff}
   .weekscroll{overflow:visible}
   .week{min-width:0}
@@ -498,6 +527,19 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
       <span class="pill-sync" id="syncPill" data-state="local"><span class="dot"></span><span id="syncText">Cet appareil</span></span>
     </div>
   </header>
+
+
+  <div class="installbar" id="installBar" hidden>
+    <span class="ib-icon" aria-hidden="true">S</span>
+    <span class="ib-text">
+      <span class="ib-title">Installe l'application</span>
+      <span class="ib-sub" id="ibSub">Pour l'avoir sur ton écran d'accueil, sans passer par le navigateur.</span>
+    </span>
+    <span class="ib-actions">
+      <button type="button" class="btn btn-primary" id="ibAction">Installer</button>
+      <button type="button" class="ib-close" id="ibClose" aria-label="Masquer">&times;</button>
+    </span>
+  </div>
 
   <div class="nowbar" id="nowbar" hidden>
     <span class="nb-label" id="nbLabel">En ce moment</span>
@@ -602,6 +644,18 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
       <span class="spacer"></span>
       <button type="button" class="btn btn-ghost" id="btnCancel">Annuler</button>
       <button type="button" class="btn btn-primary" id="btnSave">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="howtoDlg">
+  <form method="dialog" class="sheet">
+    <div class="sheet-head"><h2 id="howtoTitle">Installer l'application</h2></div>
+    <div class="sheet-body" id="howtoBody"></div>
+    <div class="sheet-foot">
+      <button type="button" class="btn btn-ghost" id="howtoCopy" hidden>Copier le lien</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn btn-primary" id="howtoClose">J'ai compris</button>
     </div>
   </form>
 </dialog>
@@ -849,6 +903,134 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
       .subscribe();
   }
 
+
+
+  /* ============ installation de l'application ============ */
+  var INSTALL_KEY = "edt-soleane-install-masque";
+  var promptInstall = null;
+  var howtoDlg = document.getElementById("howtoDlg");
+
+  var ua = navigator.userAgent;
+  var estIOS = /iPad|iPhone|iPod/.test(ua) ||
+               (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  var estFirefox = /Firefox\//.test(ua);
+  var estMobile = estIOS || /Android/.test(ua) || navigator.maxTouchPoints > 1;
+  var dejaInstallee = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) ||
+                      navigator.standalone === true;
+
+  function installMasque(){
+    try{ return localStorage.getItem(INSTALL_KEY) === "1"; }catch(e){ return false; }
+  }
+  function montrerBandeau(){
+    document.getElementById("installBar").hidden = dejaInstallee || installMasque();
+  }
+  function masquerBandeau(definitif){
+    document.getElementById("installBar").hidden = true;
+    if(definitif){ try{ localStorage.setItem(INSTALL_KEY, "1"); }catch(e){} }
+  }
+
+  // Chrome et Edge préviennent qu'ils peuvent installer : on garde la main sur le moment.
+  window.addEventListener("beforeinstallprompt", function(e){
+    e.preventDefault();
+    promptInstall = e;
+    document.getElementById("ibSub").textContent =
+      "Un appui sur Installer et l'icône apparaît sur ton écran d'accueil.";
+    montrerBandeau();
+  });
+  window.addEventListener("appinstalled", function(){
+    promptInstall = null;
+    dejaInstallee = true;
+    masquerBandeau(true);
+  });
+
+  function etapesInstallation(){
+    if(estIOS){
+      return {
+        titre: "Installer sur iPhone ou iPad",
+        etapes: [
+          "Appuie sur le bouton <b>Partager</b> en bas de l'écran : le carré avec une flèche vers le haut.",
+          "Fais défiler la liste, puis appuie sur <b>Sur l'écran d'accueil</b>.",
+          "Appuie sur <b>Ajouter</b> en haut à droite."
+        ],
+        note: "Sur iPhone, ça ne marche que depuis <b>Safari</b>. Si tu es dans Chrome, rouvre le lien avec Safari.",
+        copier: true
+      };
+    }
+    if(estMobile){
+      return {
+        titre: "Installer sur ton téléphone",
+        etapes: [
+          "Appuie sur le menu du navigateur : les <b>trois points</b> en haut à droite (ou en bas).",
+          "Choisis <b>Installer l'application</b>, ou <b>Ajouter à l'écran d'accueil</b>.",
+          "Confirme. L'icône apparaît avec tes autres applications."
+        ],
+        note: null,
+        copier: false
+      };
+    }
+    if(estFirefox){
+      return {
+        titre: "Sur ordinateur avec Firefox",
+        etapes: [
+          "Firefox sur ordinateur ne sait pas encore installer les applications web : il n'y a pas d'icône à créer.",
+          "Le plus simple : copie le lien ci-dessous et ouvre-le dans <b>Chrome</b> ou <b>Edge</b>, qui proposeront l'installation.",
+          "Si tu préfères rester sur Firefox, fais un <b>clic droit sur l'onglet</b> puis <b>Épingler l'onglet</b> : la page reste ouverte en permanence, tout à gauche."
+        ],
+        note: "Tout fonctionne normalement dans Firefox, c'est seulement l'icône séparée qui n'est pas possible.",
+        copier: true
+      };
+    }
+    return {
+      titre: "Installer sur ordinateur",
+      etapes: [
+        "Regarde à droite de la barre d'adresse : il y a une petite icône d'installation (un écran avec une flèche).",
+        "Clique dessus, puis sur <b>Installer</b>.",
+        "L'application s'ouvre dans sa propre fenêtre et s'ajoute à ton menu Démarrer."
+      ],
+      note: null,
+      copier: false
+    };
+  }
+
+  function ouvrirAide(){
+    var i = etapesInstallation();
+    document.getElementById("howtoTitle").textContent = i.titre;
+    document.getElementById("howtoBody").innerHTML =
+      '<ol class="howto">' + i.etapes.map(function(e){ return "<li>" + e + "</li>"; }).join("") + "</ol>" +
+      (i.note ? '<p class="howto-note">' + i.note + "</p>" : "");
+    var copier = document.getElementById("howtoCopy");
+    copier.hidden = !i.copier;
+    copier.textContent = "Copier le lien";
+    howtoDlg.showModal();
+  }
+
+  document.getElementById("ibAction").addEventListener("click", function(){
+    if(promptInstall){
+      promptInstall.prompt();
+      promptInstall.userChoice.then(function(r){
+        if(r && r.outcome === "accepted") masquerBandeau(true);
+        promptInstall = null;
+      });
+      return;
+    }
+    ouvrirAide();
+  });
+  document.getElementById("ibClose").addEventListener("click", function(){ masquerBandeau(true); });
+  document.getElementById("howtoClose").addEventListener("click", function(){ howtoDlg.close(); });
+  document.getElementById("howtoCopy").addEventListener("click", function(){
+    var b = document.getElementById("howtoCopy");
+    var ok = function(){ b.textContent = "Lien copié"; };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(location.href).then(ok, function(){ b.textContent = location.href; });
+    }else{
+      b.textContent = location.href;
+    }
+  });
+
+  if(!promptInstall){
+    document.getElementById("ibAction").textContent = estFirefox && !estMobile ? "Comment faire" : "Installer";
+  }
+  montrerBandeau();
 
   /* ============ apparence : thème et style ============ */
   var LOOK_KEY = "edt-soleane-look";
