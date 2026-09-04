@@ -149,6 +149,7 @@ h1{
   letter-spacing:.02em;
 }
 .subline b{color:var(--ink);font-weight:800}
+.printinfo{display:none}   /* n'apparaît qu'à l'impression */
 .masthead-side{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 
 .pill-sync{
@@ -613,6 +614,12 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   /* Toute la semaine doit tenir sur une seule feuille. */
   :root{ --ligne-min:50px; --ligne-pause:18px; }
   .week{gap:3px}
+  /* « Aujourd'hui » n'a aucun sens sur une feuille qu'on relira dans dix
+     jours : on le remplace par la semaine et la date d'impression. */
+  .printinfo{display:block;margin:3px 0 0;font-size:11px;font-weight:700;
+             color:#3d3548;letter-spacing:.03em}
+  .dhead[data-today="1"]::after{content:none !important;display:none !important}
+  .dhead[data-today="1"] .dh-name{color:inherit !important}
   .card{break-inside:avoid;padding:5px 8px;border-left-width:3px}
   .week .card .c-subject{font-size:10.5px;line-height:1.15}
   .week .card .c-meta{font-size:9.5px;margin-top:2px;gap:0}
@@ -652,6 +659,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
       <div>
         <h1>Emploi du temps de Soleane</h1>
         <p class="subline">Classe <b>4G3</b> · Collège Jean Moulin · Sortie aux horaires habituels</p>
+        <p class="printinfo" id="printInfo"></p>
       </div>
     </div>
     <div class="masthead-side">
@@ -1598,6 +1606,12 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     // la vue Jour ou Devoirs, puis on lui rend sa vue.
     var vueAvant = view;
     if(view !== "semaine"){ view = "semaine"; render(); }
+
+    var quelle = weekFilter === "all"
+      ? "Semaines A et B"
+      : "Semaine " + weekLabel(weekEffectif());
+    document.getElementById("printInfo").textContent =
+      quelle + " · imprimé le " + libelleDate(iso(new Date()));
     var rendreLaVue = function(){
       window.removeEventListener("afterprint", rendreLaVue);
       if(vueAvant !== "semaine"){ view = vueAvant; render(); }
