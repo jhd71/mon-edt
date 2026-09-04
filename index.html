@@ -47,6 +47,8 @@
   --badge-line-s:35%; --badge-line-l:84%;
   --r:16px;
   --r-sm:10px;
+  --ligne-min:80px;   /* hauteur d'une heure dans la vue Semaine */
+  --ligne-pause:34px;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -580,10 +582,51 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   *{transition:none!important;animation:none!important}
 }
 @media print{
-  .controls,.daytabs,.nowbar,.editnote,.pill-sync,.slot-empty,.icon-btn,.installbar,.pill-week{display:none!important}
+  /* Une semaine tient en paysage, pas en portrait. */
+  @page{ size: A4 landscape; margin: 9mm; }
+
+  /* Les couleurs des matières sont l'intérêt de la feuille : on demande
+     explicitement à ne pas les faire disparaître. */
+  *{
+    -webkit-print-color-adjust:exact !important;
+    print-color-adjust:exact !important;
+    box-shadow:none !important;
+    transition:none !important;
+  }
+
+  /* Tout ce qui ne sert qu'à l'écran. */
+  .controls,.daytabs,.nowbar,.editnote,.pill-sync,.icon-btn,
+  .installbar,.pill-week,.slot-empty,#dayView,#devWrap{display:none !important}
+  dialog{display:none !important}
+
   body{background:#fff}
-  .weekscroll{overflow:visible}
+  .wrap{max-width:none;padding:0}
+
+  /* La grille s'imprime en entier, sans zone de défilement. */
+  .weekscroll{overflow:visible !important;display:block !important}
   .week{min-width:0}
+
+  /* Les en-têtes collants bloquent l'aperçu d'impression de Chrome. */
+  .dhead,.hcell{position:static !important}
+  .dhead{background:transparent !important}
+
+  /* Toute la semaine doit tenir sur une seule feuille. */
+  :root{ --ligne-min:50px; --ligne-pause:18px; }
+  .week{gap:3px}
+  .card{break-inside:avoid;padding:5px 8px;border-left-width:3px}
+  .week .card .c-subject{font-size:10.5px;line-height:1.15}
+  .week .card .c-meta{font-size:9.5px;margin-top:2px;gap:0}
+  .week .card .c-meta .c-room{font-size:9px}
+  .wk-badge{font-size:8.5px;padding:0 5px}
+  .dhead .dh-name{font-size:13px}
+  .hcell b{font-size:10px} .hcell i{font-size:8.5px}
+  h1{font-size:20px}
+  .masthead{padding-bottom:8px}
+  .legend-item{font-size:9.5px}
+  footer{margin-top:5px;padding-top:5px;border-top:1px solid #ddd;
+         gap:4px 14px;break-inside:avoid;page-break-inside:avoid}
+  footer .spacer{display:none}   /* la mention Q1/Q2 reste sur la même ligne */
+  #footNote{font-size:9.5px}
 }
 
 </style>
@@ -1550,6 +1593,19 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   }
 
   /* ============ menu ============ */
+  function imprimerSemaine(){
+    // On imprime toujours la grille de la semaine, même si elle regardait
+    // la vue Jour ou Devoirs, puis on lui rend sa vue.
+    var vueAvant = view;
+    if(view !== "semaine"){ view = "semaine"; render(); }
+    var rendreLaVue = function(){
+      window.removeEventListener("afterprint", rendreLaVue);
+      if(vueAvant !== "semaine"){ view = vueAvant; render(); }
+    };
+    window.addEventListener("afterprint", rendreLaVue);
+    setTimeout(function(){ window.print(); }, 150);
+  }
+
   var menuDlg = document.getElementById("menuDlg");
   var aideDlg = document.getElementById("aideDlg");
 
@@ -1582,7 +1638,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     setTimeout(function(){
       if(quoi === "apparence"){ paintLook(); lookDlg.showModal(); }
       else if(quoi === "installer"){ lancerInstallation(); }
-      else if(quoi === "imprimer"){ window.print(); }
+      else if(quoi === "imprimer"){ imprimerSemaine(); }
       else if(quoi === "aide"){ aideDlg.showModal(); }
     }, 80);
   });
@@ -1877,7 +1933,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
 
     // Une ligne par créneau, plus basse pour la pause.
     grid.style.gridTemplateRows = "auto " + SLOTS.map(function(c){
-      return c.pause ? "34px" : "minmax(80px,auto)";
+      return c.pause ? "var(--ligne-pause)" : "minmax(var(--ligne-min),auto)";
     }).join(" ");
 
     DAYS.forEach(function(name, i){
