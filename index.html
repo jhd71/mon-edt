@@ -716,12 +716,12 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   "use strict";
 
   /* =====================================================================
-     CONFIGURATION — voir le README pour changer le code
+     CONFIGURATION — l'URL et la clé publique de votre projet Supabase.
+     Le code de modification, lui, se change dans supabase.sql (§4).
      ===================================================================== */
   var CONFIG = {
     SUPABASE_URL:      "https://ekjgfiyhkythqcnmhzea.supabase.co",
     SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVramdmaXloa3l0aHFjbm1oemVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI2NzYxNDIsImV4cCI6MjA1ODI1MjE0Mn0.V0j_drb6GiTojgwxC6ydjnyJDRRT9lUbSc1E7bFE2Z4",
-    CODE_HASH:        "83e19a9ce479dc064bab4bd50134db14918cc967debd3ad223bb8993c523788d",
     TABLE:             "edt_soleane",
     ROW_ID:            "soleane"
   };
@@ -850,14 +850,23 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   function persist(){
     saveLocal();
     if(!sb) return;
+    if(!codeClair){ setSync("local", "Code requis"); return; }
     setSync("saving", "Envoi…");
-    sb.from(CONFIG.TABLE)
-      .update({ courses: state.courses, updated_at: new Date().toISOString() })
-      .eq("id", CONFIG.ROW_ID)
-      .then(function(res){
-        if(res.error){ setSync("local", "Non enregistré"); console.error(res.error); }
-        else setSync("ok", "Synchronisé");
-      });
+    sb.rpc("edt_enregistrer", {
+      p_id: CONFIG.ROW_ID,
+      p_code: codeClair,
+      p_courses: state.courses
+    }).then(function(res){
+      if(res.error){
+        console.error(res.error);
+        // le code a changé dans la base depuis : on le redemande
+        oublierCode();
+        setSync("local", "Non enregistré");
+        alerteCode("Enregistrement refusé : le code a changé. Retape-le.");
+      }else{
+        setSync("ok", "Synchronisé");
+      }
+    });
   }
 
   function applyRemote(rows){
@@ -887,10 +896,10 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
       .then(function(res){
         if(res.error){ setSync("local", "Cet appareil"); console.error(res.error); return; }
         if(!res.data){
-          // première utilisation : on crée la ligne avec l'emploi du temps d'origine
-          return sb.from(CONFIG.TABLE)
-            .insert({ id: CONFIG.ROW_ID, courses: state.courses })
-            .then(function(){ setSync("ok", "Synchronisé"); });
+          // Aucune ligne en base : on garde l'emploi du temps d'origine affiché.
+          // Elle sera créée à la première modification enregistrée.
+          setSync("local", "Pas encore en base");
+          return;
         }
         if(!applyRemote(res.data)) persist();
         setSync("ok", "Synchronisé");
@@ -1100,46 +1109,54 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     applyLook();
   });
 
-  /* ============ code de modification (empreinte SHA-256) ============ */
-  var CODE_KEY = "edt-soleane-code-ok";
-  try{ localStorage.removeItem(CODE_KEY); }catch(e){}   // ancienne mémorisation permanente
+  /* ============ code de modification ============ */
+  /* Le code n'est plus dans cette page, même sous forme d'empreinte : il vit
+     uniquement dans la base. C'est Supabase qui le vérifie et qui refuse
+     d'enregistrer sans lui — la clé publique seule ne permet rien d'écrire. */
+  var CODE_KEY = "edt-soleane-code";
+  try{ localStorage.removeItem("edt-soleane-code-ok"); }catch(e){}   // ancienne version
   var codeDlg = document.getElementById("codeDlg");
+  var codeClair = "";
+  try{ codeClair = sessionStorage.getItem(CODE_KEY) || ""; }catch(e){}
 
-  // Transforme le code tapé en empreinte : le code lui-même n'est jamais dans la page.
-  function empreinte(texte){
-    if(!(window.crypto && crypto.subtle && window.TextEncoder)) return Promise.resolve(null);
-    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(texte)).then(function(buf){
-      return Array.prototype.map.call(new Uint8Array(buf), function(o){
-        return ("0" + o.toString(16)).slice(-2);
-      }).join("");
-    });
-  }
-  function codeAlreadyOk(){
-    try{ return sessionStorage.getItem(CODE_KEY) === CONFIG.CODE_HASH; }catch(e){ return false; }
-  }
   function askCode(onOk){
-    if(!CONFIG.CODE_HASH || codeAlreadyOk()){ onOk(); return; }
+    if(!configured){ onOk(); return; }            // mode local : rien à protéger
+    if(codeClair){ onOk(); return; }
+    if(!sb){
+      alerteCode("Connexion à la base en cours, réessaie dans deux secondes.");
+      return;
+    }
     document.getElementById("codeInput").value = "";
     document.getElementById("codeError").hidden = true;
-    document.getElementById("codeError").textContent = "Code incorrect.";
     codeDlg.showModal();
     setTimeout(function(){ document.getElementById("codeInput").focus(); }, 30);
     codeDlg.onOk = onOk;
+  }
+  function alerteCode(msg){
+    var err = document.getElementById("codeError");
+    err.textContent = msg;
+    err.hidden = false;
+    if(!codeDlg.open) codeDlg.showModal();
   }
   function validateCode(){
     var champ = document.getElementById("codeInput");
     var err = document.getElementById("codeError");
     var bouton = document.getElementById("codeOk");
+    var saisi = champ.value.trim();
+    if(!saisi) return;
     bouton.disabled = true;
-    empreinte(champ.value.trim()).then(function(h){
+    bouton.textContent = "Vérification…";
+    sb.rpc("edt_code_ok", { p_id: CONFIG.ROW_ID, p_code: saisi }).then(function(res){
       bouton.disabled = false;
-      if(h === null){
-        err.textContent = "Vérification impossible ici : ouvrez la page en https.";
+      bouton.textContent = "Valider";
+      if(res.error){
+        err.textContent = "Impossible de vérifier le code : pas de connexion.";
         err.hidden = false;
         return;
       }
-      if(h === CONFIG.CODE_HASH){
-        try{ sessionStorage.setItem(CODE_KEY, h); }catch(e){}
+      if(res.data === true){
+        codeClair = saisi;
+        try{ sessionStorage.setItem(CODE_KEY, saisi); }catch(e){}
         codeDlg.close();
         if(codeDlg.onOk) codeDlg.onOk();
       }else{
@@ -1148,6 +1165,10 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
         champ.select();
       }
     });
+  }
+  function oublierCode(){
+    codeClair = "";
+    try{ sessionStorage.removeItem(CODE_KEY); }catch(e){}
   }
   document.getElementById("codeOk").addEventListener("click", validateCode);
   document.getElementById("codeCancel").addEventListener("click", function(){ codeDlg.close(); });

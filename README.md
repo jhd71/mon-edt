@@ -49,21 +49,19 @@ appareil : le **thème** (Automatique / Clair / Sombre) et le **style des cours*
 calculée au chargement pour garantir un contraste d'au moins 4,6:1 avec le texte
 blanc — c'est pourquoi un jaune sort plus foncé qu'un bleu.
 
-## Changer le code de modification
+## Le code de modification
 
-`CODE_HASH` ne contient pas le code, seulement son empreinte SHA-256 : le code
-n'apparaît donc nulle part dans la page, même en lisant le code source.
+Le code ne se trouve **nulle part dans ces fichiers** : il vit uniquement dans
+la base, sous forme d'empreinte SHA-256, et c'est Supabase qui le vérifie.
 
-Pour le changer, ouvrir n'importe quelle page en https, appuyer sur **F12**,
-onglet **Console**, coller ceci en remplaçant `2525` par le nouveau code :
+La page ne peut plus écrire directement dans la table : elle appelle la fonction
+`edt_enregistrer(id, code, cours)`, qui refuse tout enregistrement sans le bon
+code. La clé publique seule ne permet donc que la lecture. Après 10 essais
+ratés, la vérification est bloquée 15 minutes.
 
-```js
-crypto.subtle.digest("SHA-256", new TextEncoder().encode("2525"))
-  .then(b => console.log([...new Uint8Array(b)].map(o => o.toString(16).padStart(2,"0")).join("")));
-```
-
-Copier la longue suite de caractères affichée et la coller à la place de la
-valeur de `CODE_HASH` dans `index.html`. Puis incrémenter `CACHE` dans `sw.js`.
+Pour changer le code : rejouer `supabase.sql` dans l'éditeur SQL de Supabase en
+remplaçant `ICI_LE_CODE` par le nouveau code **au moment de coller**, sans
+réenregistrer le fichier. Rien à modifier dans `index.html`, rien à pousser.
 
 ## Notes
 
