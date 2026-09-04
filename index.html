@@ -408,6 +408,85 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
 .sheet-foot .spacer{flex:1}
 
 
+/* ---------- pastille de semaine ---------- */
+.pill-week{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--accent-ink);background:var(--accent-soft);border:1px solid var(--accent);
+  padding:5px 11px;border-radius:999px;white-space:nowrap;
+}
+
+/* ---------- devoirs ---------- */
+.tabcount{
+  display:inline-block;margin-left:6px;min-width:17px;padding:0 5px;
+  font-size:10.5px;font-weight:800;line-height:16px;text-align:center;
+  border-radius:999px;background:var(--accent);color:var(--on-accent);
+}
+.seg button[aria-pressed="true"] .tabcount{background:var(--accent);color:var(--on-accent)}
+
+.devlist{margin:18px 0 0;display:flex;flex-direction:column;gap:20px}
+.devgroup{display:flex;flex-direction:column;gap:8px}
+.devgroup > h2{
+  margin:0;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-3);display:flex;align-items:center;gap:9px;
+}
+.devgroup > h2::after{content:"";flex:1;height:1px;background:var(--line)}
+.devgroup[data-urgent="1"] > h2{color:var(--now)}
+
+.dev{
+  display:flex;gap:12px;align-items:flex-start;
+  background:var(--surface);border:1px solid var(--line);
+  border-left:4px solid hsl(var(--h) var(--chip-line-s) var(--chip-line-l));
+  border-radius:var(--r-sm);padding:11px 13px;box-shadow:var(--shadow-sm);
+}
+.dev-check{
+  flex:none;width:22px;height:22px;margin-top:1px;border-radius:7px;cursor:pointer;
+  border:2px solid var(--line-strong);background:var(--surface);
+  display:grid;place-items:center;color:transparent;font-size:13px;font-weight:800;
+  transition:background .15s ease,border-color .15s ease,color .15s ease;
+}
+.dev-check:hover{border-color:var(--accent)}
+.dev[data-fait="1"] .dev-check{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.dev-body{flex:1 1 auto;min-width:0}
+.dev-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 9px}
+.dev-mat{
+  font-weight:800;font-size:13.5px;
+  color:hsl(var(--h) var(--chip-fg-s) var(--chip-fg-l));
+}
+.dev-type{
+  font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  padding:2px 7px;border-radius:999px;
+  background:hsl(var(--h) var(--chip-s) var(--chip-l));
+  color:hsl(var(--h) var(--chip-fg-s) var(--chip-fg-l));
+}
+.dev-type[data-t="controle"]{background:var(--now);color:#fff;border:0}
+.dev-quand{
+  font-family:"DM Mono",ui-monospace,monospace;font-size:11.5px;color:var(--ink-3);
+  white-space:nowrap;
+}
+@media (min-width:640px){ .dev-quand{margin-left:auto} }
+.dev-texte{margin:3px 0 0;font-size:14px;color:var(--ink);line-height:1.4;overflow-wrap:break-word}
+.dev[data-fait="1"] .dev-texte,.dev[data-fait="1"] .dev-mat{text-decoration:line-through;opacity:.55}
+.dev-edit{
+  flex:none;border:0;background:transparent;cursor:pointer;color:var(--ink-3);
+  padding:4px 6px;border-radius:8px;font-size:13px;
+}
+.dev-edit:hover{background:var(--surface-2);color:var(--ink)}
+
+.devbadge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:9.5px;font-weight:800;letter-spacing:.05em;padding:1px 7px;border-radius:999px;
+  background:hsl(var(--h) var(--badge-s) var(--badge-l));
+  color:hsl(var(--h) var(--badge-fg-s) var(--badge-fg-l));
+  border:1px solid hsl(var(--h) var(--badge-line-s) var(--badge-line-l));
+}
+.field textarea{
+  font:inherit;font-weight:600;font-size:14.5px;color:var(--ink);
+  background:var(--ground);border:1px solid var(--line-strong);border-radius:11px;
+  padding:9px 11px;width:100%;min-height:82px;resize:vertical;
+}
+.field textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+
 /* ---------- bandeau d'installation ---------- */
 .installbar{
   margin:16px 0 0;padding:12px 14px;border-radius:var(--r);
@@ -524,6 +603,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
           <circle cx="15.4" cy="8.6" r="1.1" fill="currentColor" stroke="none"/>
         </svg>
       </button>
+      <span class="pill-week" id="weekPill">Semaine A</span>
       <span class="pill-sync" id="syncPill" data-state="local"><span class="dot"></span><span id="syncText">Cet appareil</span></span>
     </div>
   </header>
@@ -552,14 +632,16 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
       <div class="seg" role="group" aria-label="Choisir la vue">
         <button type="button" id="viewJour" aria-pressed="true">Jour</button>
         <button type="button" id="viewSemaine" aria-pressed="false">Semaine</button>
+        <button type="button" id="viewDevoirs" aria-pressed="false">Devoirs<span class="tabcount" id="devCount" hidden>0</span></button>
       </div>
     </div>
-    <div class="ctl-group">
+    <div class="ctl-group" id="controlsSemaine">
       <span class="seg-label">Semaine</span>
       <div class="seg" role="group" aria-label="Filtrer par semaine">
-        <button type="button" data-week="all" aria-pressed="true">Les deux</button>
-        <button type="button" data-week="Q1" aria-pressed="false">A · Q1</button>
-        <button type="button" data-week="Q2" aria-pressed="false">B · Q2</button>
+        <button type="button" data-week="auto" aria-pressed="true" id="btnAuto">Auto</button>
+        <button type="button" data-week="all" aria-pressed="false">Les deux</button>
+        <button type="button" data-week="Q1" aria-pressed="false">A</button>
+        <button type="button" data-week="Q2" aria-pressed="false">B</button>
       </div>
     </div>
     <span class="spacer"></span>
@@ -573,6 +655,11 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   <nav class="daytabs" id="daytabs" aria-label="Jours de la semaine"></nav>
 
   <main id="dayView" class="daylist"></main>
+
+  <div id="devWrap" hidden>
+    <button type="button" class="btn btn-primary" id="btnAddDev" style="margin-top:16px">+ Ajouter un devoir</button>
+    <div class="devlist" id="devView"></div>
+  </div>
 
   <div class="weekscroll" id="weekScroll" hidden>
     <div class="week" id="weekGrid"></div>
@@ -644,6 +731,41 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
       <span class="spacer"></span>
       <button type="button" class="btn btn-ghost" id="btnCancel">Annuler</button>
       <button type="button" class="btn btn-primary" id="btnSave">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="devDlg">
+  <form method="dialog" class="sheet" id="devForm">
+    <div class="sheet-head"><h2 id="devTitle">Nouveau devoir</h2></div>
+    <div class="sheet-body">
+      <div class="grid2">
+        <div class="field">
+          <label for="dMat">Matière</label>
+          <input id="dMat" list="subjectList" autocomplete="off" required placeholder="Mathématiques">
+        </div>
+        <div class="field">
+          <label for="dType">Type</label>
+          <select id="dType">
+            <option value="devoir">Devoir</option>
+            <option value="controle">Contrôle</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="dPour">À rendre le</label>
+        <input id="dPour" type="date" required>
+      </div>
+      <div class="field">
+        <label for="dTexte">Ce qu'il y a à faire</label>
+        <textarea id="dTexte" placeholder="Exercices 12 et 14 page 47"></textarea>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button type="button" class="btn btn-danger" id="dSuppr">Supprimer</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn btn-ghost" id="dAnnuler">Annuler</button>
+      <button type="button" class="btn btn-primary" id="dSave">Enregistrer</button>
     </div>
   </form>
 </dialog>
@@ -723,7 +845,8 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     SUPABASE_URL:      "https://ekjgfiyhkythqcnmhzea.supabase.co",
     SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVramdmaXloa3l0aHFjbm1oemVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI2NzYxNDIsImV4cCI6MjA1ODI1MjE0Mn0.V0j_drb6GiTojgwxC6ydjnyJDRRT9lUbSc1E7bFE2Z4",
     TABLE:             "edt_soleane",
-    ROW_ID:            "soleane"
+    ROW_ID:            "soleane",
+    SEMAINE_REF_LUNDI: "2026-08-31"   // le lundi d'une semaine A (Q1)
   };
   /* ===================================================================== */
 
@@ -812,9 +935,9 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   }
 
   /* ============ état ============ */
-  var state = { courses: withIds(DEFAULT_COURSES) };
+  var state = { courses: withIds(DEFAULT_COURSES), devoirs: [] };
   var view = window.matchMedia("(min-width: 900px)").matches ? "semaine" : "jour";
-  var weekFilter = "all";
+  var weekFilter = "auto";
   var editMode = false;
   var editingId = null;
   var pendingHue = 152;
@@ -830,13 +953,14 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
                    CONFIG.SUPABASE_ANON_KEY.length > 20;
 
   function saveLocal(){
-    try{ localStorage.setItem(LS_KEY, JSON.stringify({courses: state.courses})); }catch(e){}
+    try{ localStorage.setItem(LS_KEY, JSON.stringify({courses: state.courses, devoirs: state.devoirs})); }catch(e){}
   }
   function loadLocal(){
     try{
       var raw = localStorage.getItem(LS_KEY);
       if(!raw) return false;
       var d = JSON.parse(raw);
+      if(d && Array.isArray(d.devoirs)) state.devoirs = d.devoirs;
       if(d && Array.isArray(d.courses) && d.courses.length){ state.courses = d.courses; return true; }
     }catch(e){}
     return false;
@@ -855,7 +979,8 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     sb.rpc("edt_enregistrer", {
       p_id: CONFIG.ROW_ID,
       p_code: codeClair,
-      p_courses: state.courses
+      p_courses: state.courses,
+      p_devoirs: state.devoirs
     }).then(function(res){
       if(res.error){
         console.error(res.error);
@@ -870,7 +995,9 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   }
 
   function applyRemote(rows){
-    if(!rows || !Array.isArray(rows.courses) || !rows.courses.length) return false;
+    if(!rows) return false;
+    if(Array.isArray(rows.devoirs)) state.devoirs = rows.devoirs;
+    if(!Array.isArray(rows.courses) || !rows.courses.length) return false;
     state.courses = rows.courses;
     saveLocal();
     render();
@@ -892,7 +1019,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
 
     sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
-    sb.from(CONFIG.TABLE).select("courses").eq("id", CONFIG.ROW_ID).maybeSingle()
+    sb.from(CONFIG.TABLE).select("courses, devoirs").eq("id", CONFIG.ROW_ID).maybeSingle()
       .then(function(res){
         if(res.error){ setSync("local", "Cet appareil"); console.error(res.error); return; }
         if(!res.data){
@@ -1041,9 +1168,218 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   }
   montrerBandeau();
 
+
+  /* ============ semaine A / B automatique ============ */
+  function lundiDe(d){
+    var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    var j = x.getDay();                       // 0 dimanche … 6 samedi
+    if(j === 0 || j === 6){                   // week-end : on vise la semaine qui vient
+      x.setDate(x.getDate() + (j === 0 ? 1 : 2));
+      return x;
+    }
+    x.setDate(x.getDate() - (j - 1));
+    return x;
+  }
+  function semaineDe(d){
+    var r = String(CONFIG.SEMAINE_REF_LUNDI).split("-");
+    var ref = new Date(+r[0], +r[1] - 1, +r[2]);
+    var n = Math.round((lundiDe(d) - ref) / 604800000);
+    return (((n % 2) + 2) % 2) === 0 ? "Q1" : "Q2";
+  }
+  function semaineCourante(){ return semaineDe(new Date()); }
+  function weekEffectif(){ return weekFilter === "auto" ? semaineCourante() : weekFilter; }
+
+  function iso(d){
+    return d.getFullYear() + "-" +
+           ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
+           ("0" + d.getDate()).slice(-2);
+  }
+  function dateDuJour(i){                     // i = 0 lundi … 4 vendredi
+    var l = lundiDe(new Date());
+    l.setDate(l.getDate() + i);
+    return l;
+  }
+
+  /* ============ devoirs ============ */
+  var devEnCours = null;
+
+  function devoirsDe(subject, dateIso){
+    return state.devoirs.filter(function(v){
+      return !v.fait && v.subject === subject && v.pour === dateIso;
+    });
+  }
+  function devoirsAFaire(){
+    return state.devoirs.filter(function(v){ return !v.fait; }).length;
+  }
+  function purgerDevoirs(){
+    var limite = new Date();
+    limite.setDate(limite.getDate() - 30);
+    var l = iso(limite);
+    var avant = state.devoirs.length;
+    state.devoirs = state.devoirs.filter(function(v){
+      return !(v.fait && v.pour && v.pour < l);
+    });
+    return state.devoirs.length !== avant;
+  }
+  function libelleDate(s){
+    if(!s) return "";
+    var p = s.split("-");
+    var d = new Date(+p[0], +p[1] - 1, +p[2]);
+    var jours = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+    var mois = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+    return jours[d.getDay()] + " " + d.getDate() + " " + mois[d.getMonth()];
+  }
+  function groupeDe(v, aujourdhui, demain, finSemaine){
+    if(v.fait) return 5;
+    if(!v.pour) return 4;
+    if(v.pour < aujourdhui) return 0;
+    if(v.pour === aujourdhui) return 1;
+    if(v.pour === demain) return 2;
+    if(v.pour <= finSemaine) return 3;
+    return 4;
+  }
+
+  function renderDevoirs(){
+    var host = document.getElementById("devView");
+    var maintenant = new Date();
+    var auj = iso(maintenant);
+    var dem = new Date(maintenant); dem.setDate(dem.getDate() + 1);
+    var fin = lundiDe(maintenant); fin.setDate(fin.getDate() + 6);
+    var titres = ["En retard", "Pour aujourd'hui", "Pour demain", "Cette semaine", "Plus tard", "Terminés"];
+    var paniers = [[], [], [], [], [], []];
+
+    state.devoirs.forEach(function(v){
+      paniers[groupeDe(v, auj, iso(dem), iso(fin))].push(v);
+    });
+    paniers.forEach(function(p){
+      p.sort(function(a, b){ return (a.pour || "9") < (b.pour || "9") ? -1 : 1; });
+    });
+
+    if(!state.devoirs.length){
+      host.innerHTML = '<div class="empty-day"><span class="big">Rien à faire</span>' +
+        "Ajoute un devoir avec le bouton ci-dessus, ou touche un cours dans la vue Jour.</div>";
+      return;
+    }
+
+    host.innerHTML = paniers.map(function(p, i){
+      if(!p.length) return "";
+      return '<section class="devgroup"' + (i === 0 || i === 1 ? ' data-urgent="1"' : "") + ">" +
+        "<h2>" + titres[i] + "</h2>" +
+        p.map(devHTML).join("") + "</section>";
+    }).join("");
+  }
+
+  function devHTML(v){
+    var h = v.h != null ? v.h : 245;
+    return '<article class="dev" style="' + styleTeinte(h) + '"' + (v.fait ? ' data-fait="1"' : "") + ">" +
+      '<button type="button" class="dev-check" data-dev-check="' + esc(v.id) +
+        '" aria-label="Marquer comme fait">&#10003;</button>' +
+      '<div class="dev-body">' +
+        '<div class="dev-head">' +
+          '<span class="dev-mat">' + esc(v.subject) + "</span>" +
+          '<span class="dev-type" data-t="' + esc(v.type || "devoir") + '">' +
+            (v.type === "controle" ? "Contrôle" : "Devoir") + "</span>" +
+          '<span class="dev-quand">' + libelleDate(v.pour) + "</span>" +
+        "</div>" +
+        (v.texte ? '<p class="dev-texte">' + esc(v.texte) + "</p>" : "") +
+      "</div>" +
+      '<button type="button" class="dev-edit" data-dev-edit="' + esc(v.id) + '" aria-label="Modifier">&#9998;</button>' +
+      "</article>";
+  }
+
+  function ouvrirDevoir(v, prefill){
+    devEnCours = v ? v.id : null;
+    document.getElementById("devTitle").textContent = v ? "Modifier le devoir" : "Nouveau devoir";
+    document.getElementById("dSuppr").hidden = !v;
+    document.getElementById("dMat").value = v ? v.subject : (prefill && prefill.subject) || "";
+    document.getElementById("dType").value = v ? (v.type || "devoir") : "devoir";
+    document.getElementById("dPour").value = v ? v.pour : (prefill && prefill.pour) || iso(new Date());
+    document.getElementById("dTexte").value = v ? (v.texte || "") : "";
+    document.getElementById("devDlg").showModal();
+    setTimeout(function(){
+      document.getElementById(v || (prefill && prefill.subject) ? "dTexte" : "dMat").focus();
+    }, 30);
+  }
+
+  function enregistrerDevoir(){
+    var mat = document.getElementById("dMat").value.trim();
+    var pour = document.getElementById("dPour").value;
+    if(!mat){ document.getElementById("dMat").focus(); return; }
+    if(!pour){ document.getElementById("dPour").focus(); return; }
+    var donnees = {
+      subject: mat,
+      type: document.getElementById("dType").value,
+      pour: pour,
+      texte: document.getElementById("dTexte").value.trim(),
+      h: hueFor(mat) != null ? hueFor(mat) : hueMatiere(mat)
+    };
+    askCode(function(){
+      if(devEnCours){
+        state.devoirs = state.devoirs.map(function(v){
+          return v.id === devEnCours ? Object.assign({}, v, donnees) : v;
+        });
+      }else{
+        donnees.id = "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        donnees.fait = false;
+        state.devoirs = state.devoirs.concat([donnees]);
+      }
+      document.getElementById("devDlg").close();
+      persist();
+      render();
+    });
+  }
+  function supprimerDevoir(){
+    if(!devEnCours) return;
+    askCode(function(){
+      state.devoirs = state.devoirs.filter(function(v){ return v.id !== devEnCours; });
+      document.getElementById("devDlg").close();
+      persist();
+      render();
+    });
+  }
+  function hueMatiere(nom){
+    var c = state.courses.filter(function(x){ return x.subject === nom; })[0];
+    return c && c.h != null ? c.h : 245;
+  }
+
+  document.getElementById("dSave").addEventListener("click", enregistrerDevoir);
+  document.getElementById("dSuppr").addEventListener("click", supprimerDevoir);
+  document.getElementById("dAnnuler").addEventListener("click", function(){
+    document.getElementById("devDlg").close();
+  });
+  document.getElementById("devForm").addEventListener("submit", function(e){
+    e.preventDefault(); enregistrerDevoir();
+  });
+  document.getElementById("btnAddDev").addEventListener("click", function(){ ouvrirDevoir(null); });
+
+  document.addEventListener("click", function(e){
+    var ch = e.target.closest("[data-dev-check]");
+    if(ch){
+      var id = ch.dataset.devCheck;
+      askCode(function(){
+        state.devoirs = state.devoirs.map(function(v){
+          return v.id === id ? Object.assign({}, v, { fait: !v.fait }) : v;
+        });
+        persist(); render();
+      });
+      return;
+    }
+    var ed = e.target.closest("[data-dev-edit]");
+    if(ed){
+      var v = state.devoirs.filter(function(x){ return x.id === ed.dataset.devEdit; })[0];
+      if(v) ouvrirDevoir(v);
+      return;
+    }
+    var ad = e.target.closest("[data-dev-add]");
+    if(ad){
+      var p = ad.dataset.devAdd.split("|");
+      ouvrirDevoir(null, { subject: p[0], pour: p[1] });
+    }
+  });
+
   /* ============ apparence : thème et style ============ */
   var LOOK_KEY = "edt-soleane-look";
-  var look = { theme: "auto", skin: "pastel", view: "", week: "all" };
+  var look = { theme: "auto", skin: "pastel", view: "", week: "auto" };
   var lookDlg = document.getElementById("lookDlg");
 
   function loadLook(){
@@ -1059,7 +1395,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     }catch(e){}
     // on restaure la vue et le filtre de semaine choisis la dernière fois
     if(look.view === "jour" || look.view === "semaine") view = look.view;
-    if(look.week === "all" || look.week === "Q1" || look.week === "Q2") weekFilter = look.week;
+    if(["auto","all","Q1","Q2"].indexOf(look.week) >= 0) weekFilter = look.week;
   }
   function saveLook(){
     try{ localStorage.setItem(LOOK_KEY, JSON.stringify(look)); }catch(e){}
@@ -1182,7 +1518,8 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   }
   function visible(){
     return state.courses.filter(function(c){
-      return weekFilter === "all" || c.week === "all" || c.week === weekFilter;
+      var w = weekEffectif();
+      return w === "all" || c.week === "all" || c.week === w;
     });
   }
   function hueFor(name){
@@ -1248,13 +1585,19 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   /* ============ rendu : carte ============ */
   function cardHTML(c, opts){
     opts = opts || {};
-    var tag = editMode ? "button" : "div";
-    var attrs = editMode ? ' type="button" data-edit="' + esc(c.id) + '"' : "";
+    var tag = "button";
+    var attrs = editMode
+      ? ' type="button" data-edit="' + esc(c.id) + '"'
+      : ' type="button" data-dev-add="' + esc(c.subject) + "|" + (opts.date || iso(new Date())) + '"' +
+        ' title="Ajouter un devoir de ' + esc(c.subject) + '"';
     var meta = [];
     if(opts.showHours) meta.push('<span class="c-room">' + SLOT_LABELS[c.s] + " → " + endLabel(c) + "</span>");
     if(c.teacher) meta.push('<span>' + esc(c.teacher) + "</span>");
     if(c.room) meta.push('<span class="c-room">Salle ' + esc(c.room) + "</span>");
     if(c.week !== "all") meta.push('<span class="wk-badge">Sem. ' + weekLabel(c.week) + "</span>");
+    var dv = opts.date ? devoirsDe(c.subject, opts.date) : [];
+    if(dv.length) meta.push('<span class="devbadge">' +
+      (dv.length > 1 ? dv.length + " devoirs" : (dv[0].type === "controle" ? "Contrôle" : "Devoir")) + "</span>");
     return "<" + tag + ' class="card"' + attrs + ' style="' + styleTeinte(c.h) + '"' +
       (opts.current ? ' data-current="1"' : "") + ">" +
       '<div class="c-subject">' + esc(c.subject) + "</div>" +
@@ -1313,11 +1656,14 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     var vis = visible();
     document.getElementById("daytabs").innerHTML = DAYS.map(function(name, i){
       var n = vis.filter(function(c){ return c.d === i; }).length;
+      var dj = iso(dateDuJour(i));
+      var nd = state.devoirs.filter(function(v){ return !v.fait && v.pour === dj; }).length;
       return '<button type="button" class="daytab" data-day="' + i + '"' +
         ' aria-pressed="' + (i === selectedDay) + '"' +
         (i === todayIdx ? ' data-today="1"' : "") + ">" +
-        '<span class="dt-name">' + DAYS_SHORT[i] + "</span>" +
-        '<span class="dt-count">' + (n ? n + " cours" : "libre") + "</span>" +
+        '<span class="dt-name">' + DAYS_SHORT[i] + " " + dateDuJour(i).getDate() + "</span>" +
+        '<span class="dt-count">' + (nd ? nd + (nd > 1 ? " devoirs" : " devoir")
+                                        : (n ? n + " cours" : "libre")) + "</span>" +
         "</button>";
     }).join("");
   }
@@ -1327,6 +1673,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     var host = document.getElementById("dayView");
     var list = visible().filter(function(c){ return c.d === selectedDay; });
     var cs = (selectedDay === todayIdx) ? currentSlot() : -1;
+    var dateJour = iso(dateDuJour(selectedDay));
 
     if(!list.length && !editMode){
       host.innerHTML = '<div class="empty-day"><span class="big">Journée libre</span>' +
@@ -1360,7 +1707,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
       out.push('<div class="dayrow"' + (isCur ? ' data-current="1"' : "") + '>' +
         '<div class="hourtag">' + hourTag(s, here[0].n || 1) + "</div>" +
         '<div class="dayrow-cards">' +
-        here.map(function(c){ return cardHTML(c, {showHours:(c.n||1) > 1, current:isCur}); }).join("") +
+        here.map(function(c){ return cardHTML(c, {showHours:(c.n||1) > 1, current:isCur, date:dateJour}); }).join("") +
         "</div></div>");
     }
     host.innerHTML = out.join("");
@@ -1398,7 +1745,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
           var cur = (d === todayIdx) && cs >= s2 && cs < s2 + span;
           out.push('<div class="cellstack" style="grid-column:' + (d+2) + ';grid-row:' + (s2+2) +
             "/span " + span + '">' +
-            here.map(function(c){ return cardHTML(c, {current:cur}); }).join("") + "</div>");
+            here.map(function(c){ return cardHTML(c, {current:cur, date:iso(dateDuJour(d))}); }).join("") + "</div>");
         }else if(editMode && !covered[d + ":" + s2]){
           out.push('<button type="button" class="slot-empty" data-add="' + d + ":" + s2 +
             '" style="grid-column:' + (d+2) + ';grid-row:' + (s2+2) + ';z-index:2" aria-label="Ajouter un cours">+</button>');
@@ -1424,19 +1771,33 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
 
   /* ============ rendu global ============ */
   function render(){
+    var sem = semaineCourante();
+    document.getElementById("weekPill").textContent = "Semaine " + weekLabel(sem);
+    document.getElementById("btnAuto").textContent = "Auto · " + weekLabel(sem);
+
     document.getElementById("viewJour").setAttribute("aria-pressed", view === "jour");
     document.getElementById("viewSemaine").setAttribute("aria-pressed", view === "semaine");
+    document.getElementById("viewDevoirs").setAttribute("aria-pressed", view === "devoirs");
     Array.prototype.forEach.call(document.querySelectorAll("[data-week]"), function(b){
       b.setAttribute("aria-pressed", b.dataset.week === weekFilter);
     });
+    var n = devoirsAFaire();
+    var badge = document.getElementById("devCount");
+    badge.textContent = n;
+    badge.hidden = !n;
+
     document.getElementById("dayView").hidden = view !== "jour";
     document.getElementById("daytabs").hidden = view !== "jour";
     document.getElementById("weekScroll").hidden = view !== "semaine";
-    document.getElementById("editNote").hidden = !editMode;
+    document.getElementById("devWrap").hidden = view !== "devoirs";
+    document.getElementById("controlsSemaine").hidden = view === "devoirs";
+    document.getElementById("btnEdit").hidden = view === "devoirs";
+    document.getElementById("editNote").hidden = !editMode || view === "devoirs";
     document.getElementById("btnEdit").textContent = editMode ? "✓ Terminer" : "✎ Modifier";
     document.getElementById("btnEdit").className = editMode ? "btn btn-primary" : "btn";
 
     renderNow();
+    if(view === "devoirs"){ renderDevoirs(); renderLegend(); return; }
     renderTabs();
     if(view === "jour") renderDay(); else renderWeek();
     renderLegend();
@@ -1522,6 +1883,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   function setView(v){ view = v; look.view = v; saveLook(); render(); }
   document.getElementById("viewJour").addEventListener("click", function(){ setView("jour"); });
   document.getElementById("viewSemaine").addEventListener("click", function(){ setView("semaine"); });
+  document.getElementById("viewDevoirs").addEventListener("click", function(){ setView("devoirs"); });
 
   Array.prototype.forEach.call(document.querySelectorAll("[data-week]"), function(b){
     b.addEventListener("click", function(){
@@ -1579,6 +1941,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
 
   /* ============ démarrage ============ */
   buildSelects();
+  purgerDevoirs();
   loadLook();
   applyLook();
   initSync();

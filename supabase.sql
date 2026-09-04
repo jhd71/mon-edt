@@ -16,6 +16,10 @@ create table if not exists public.edt_soleane (
   updated_at  timestamptz not null default now()
 );
 
+-- Les devoirs et contrôles, ajoutés depuis l'application.
+alter table public.edt_soleane
+  add column if not exists devoirs jsonb not null default '[]'::jsonb;
+
 alter table public.edt_soleane enable row level security;
 
 -- Lecture ouverte : la page doit pouvoir afficher l'emploi du temps
@@ -127,7 +131,7 @@ $$;
 
 -- Appelée par la page à chaque enregistrement. Sans le bon code,
 -- rien n'est écrit, même avec la clé publique en main.
-create or replace function public.edt_enregistrer(p_id text, p_code text, p_courses jsonb)
+create or replace function public.edt_enregistrer(p_id text, p_code text, p_courses jsonb, p_devoirs jsonb)
 returns void
 language plpgsql
 security definer
@@ -138,14 +142,31 @@ begin
     raise exception 'Code de modification invalide';
   end if;
 
-  insert into public.edt_soleane (id, courses, updated_at)
-  values (p_id, p_courses, now())
+  insert into public.edt_soleane (id, courses, devoirs, updated_at)
+  values (p_id, p_courses, coalesce(p_devoirs, '[]'::jsonb), now())
   on conflict (id) do update
-    set courses = excluded.courses, updated_at = now();
+    set courses    = excluded.courses,
+        devoirs    = coalesce(p_devoirs, public.edt_soleane.devoirs),
+        updated_at = now();
+end;
+$$;
+
+-- Ancienne version à 3 arguments, gardée pour qu'une page pas encore mise à
+-- jour continue d'enregistrer. Elle laisse les devoirs intacts.
+create or replace function public.edt_enregistrer(p_id text, p_code text, p_courses jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  perform public.edt_enregistrer(p_id, p_code, p_courses, null::jsonb);
 end;
 $$;
 
 revoke all on function public.edt_code_ok(text, text) from public;
 revoke all on function public.edt_enregistrer(text, text, jsonb) from public;
+revoke all on function public.edt_enregistrer(text, text, jsonb, jsonb) from public;
 grant execute on function public.edt_code_ok(text, text) to anon, authenticated;
 grant execute on function public.edt_enregistrer(text, text, jsonb) to anon, authenticated;
+grant execute on function public.edt_enregistrer(text, text, jsonb, jsonb) to anon, authenticated;
