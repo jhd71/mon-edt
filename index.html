@@ -852,14 +852,26 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
 
   /* ============ apparence : thème et style ============ */
   var LOOK_KEY = "edt-soleane-look";
-  var look = { theme: "auto", skin: "pastel" };
+  var look = { theme: "auto", skin: "pastel", view: "", week: "all" };
   var lookDlg = document.getElementById("lookDlg");
 
   function loadLook(){
     try{
       var r = localStorage.getItem(LOOK_KEY);
-      if(r){ var o = JSON.parse(r); if(o.theme) look.theme = o.theme; if(o.skin) look.skin = o.skin; }
+      if(r){
+        var o = JSON.parse(r);
+        if(o.theme) look.theme = o.theme;
+        if(o.skin)  look.skin  = o.skin;
+        if(o.view)  look.view  = o.view;
+        if(o.week)  look.week  = o.week;
+      }
     }catch(e){}
+    // on restaure la vue et le filtre de semaine choisis la dernière fois
+    if(look.view === "jour" || look.view === "semaine") view = look.view;
+    if(look.week === "all" || look.week === "Q1" || look.week === "Q2") weekFilter = look.week;
+  }
+  function saveLook(){
+    try{ localStorage.setItem(LOOK_KEY, JSON.stringify(look)); }catch(e){}
   }
   function applyLook(){
     var el = document.documentElement;
@@ -1211,6 +1223,9 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   function render(){
     document.getElementById("viewJour").setAttribute("aria-pressed", view === "jour");
     document.getElementById("viewSemaine").setAttribute("aria-pressed", view === "semaine");
+    Array.prototype.forEach.call(document.querySelectorAll("[data-week]"), function(b){
+      b.setAttribute("aria-pressed", b.dataset.week === weekFilter);
+    });
     document.getElementById("dayView").hidden = view !== "jour";
     document.getElementById("daytabs").hidden = view !== "jour";
     document.getElementById("weekScroll").hidden = view !== "semaine";
@@ -1301,15 +1316,15 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
   }
 
   /* ============ évènements ============ */
-  document.getElementById("viewJour").addEventListener("click", function(){ view = "jour"; render(); });
-  document.getElementById("viewSemaine").addEventListener("click", function(){ view = "semaine"; render(); });
+  function setView(v){ view = v; look.view = v; saveLook(); render(); }
+  document.getElementById("viewJour").addEventListener("click", function(){ setView("jour"); });
+  document.getElementById("viewSemaine").addEventListener("click", function(){ setView("semaine"); });
 
   Array.prototype.forEach.call(document.querySelectorAll("[data-week]"), function(b){
     b.addEventListener("click", function(){
       weekFilter = b.dataset.week;
-      Array.prototype.forEach.call(document.querySelectorAll("[data-week]"), function(x){
-        x.setAttribute("aria-pressed", x === b);
-      });
+      look.week = weekFilter;
+      saveLook();
       render();
     });
   });

@@ -1,7 +1,7 @@
 /* Emploi du temps — service worker
    Network First partout, cache seulement en secours hors ligne.
    (Ne jamais repasser en Cache First : une page neuve arriverait sans son style.) */
-const CACHE = "edt-soleane-v4";
+const CACHE = "edt-soleane-v5";
 const FICHIERS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
