@@ -307,7 +307,7 @@ button.card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
 .week{
   display:grid;
   grid-template-columns:50px repeat(5,minmax(138px,1fr));
-  grid-template-rows:auto repeat(4,minmax(80px,auto)) 26px 26px repeat(3,minmax(80px,auto));
+  /* les lignes sont calculées d'après SLOTS, voir renderWeek() */
   gap:6px;
   min-width:780px;
 }
@@ -332,7 +332,7 @@ button.card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
 .hcell i{font-style:normal;font-size:9.5px;font-weight:400;color:var(--ink-3);opacity:.65;line-height:1.2}
 .hcell[data-current="1"] b{color:var(--now)}
 .lunchband{
-  grid-column:2/-1;grid-row:6/span 2;align-self:stretch;
+  grid-column:2/-1;align-self:stretch;
   border-radius:var(--r-sm);
   background:repeating-linear-gradient(135deg,var(--surface-2) 0 8px,transparent 8px 16px);
   border:1px solid var(--line);
@@ -859,8 +859,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     { debut: "9h00",  fin: "10h00" },
     { debut: "10h00", fin: "11h00" },
     { debut: "11h00", fin: "12h00" },
-    { debut: "12h00", fin: "12h45", pause: true },
-    { debut: "12h45", fin: "13h30", pause: true },
+    { debut: "12h00", fin: "13h30", pause: true },
     { debut: "13h30", fin: "14h30" },
     { debut: "14h30", fin: "15h30" },
     { debut: "15h30", fin: "16h30" }
@@ -925,6 +924,19 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     {d:4,s:3,n:1,subject:"Sciences Vie & Terre",teacher:"Rueff C.",room:"314",week:"Q1",h:100},
     {d:4,s:6,n:2,subject:"EPS",teacher:"Goujet E.",room:"",week:"Q1",h:172}
   ];
+
+  /* L'ancienne version découpait la pause en deux créneaux fictifs (12h00 et
+     12h45). Les cours de l'après-midi étaient donc rangés un cran plus loin.
+     On les recale ici, au chargement, sans rien demander : dès qu'un cours
+     porte l'indice 8, qui n'existe plus, on sait qu'on lit d'anciennes données.
+     Relancer la fonction sur des données déjà reprises ne change rien. */
+  function migrerHoraires(){
+    if(!state.courses.some(function(c){ return c.s >= SLOTS.length; })) return false;
+    state.courses = state.courses.map(function(c){
+      return c.s >= 6 ? Object.assign({}, c, { s: c.s - 1 }) : c;
+    });
+    return true;
+  }
 
   function withIds(list){
     return list.map(function(c,i){
@@ -999,6 +1011,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     if(Array.isArray(rows.devoirs)) state.devoirs = rows.devoirs;
     if(!Array.isArray(rows.courses) || !rows.courses.length) return false;
     state.courses = rows.courses;
+    migrerHoraires();
     saveLocal();
     render();
     return true;
@@ -1006,6 +1019,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
 
   function initSync(){
     loadLocal();
+    migrerHoraires();
     render();
 
     if(!configured){
@@ -1685,8 +1699,8 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     list.forEach(function(c){ for(var k=0;k<(c.n||1);k++) covered[c.s+k] = true; });
 
     var out = [];
-    for(var s = 0; s < 9; s++){
-      if(s === 4){
+    for(var s = 0; s < SLOTS.length; s++){
+      if(s === LUNCH_SLOTS[0]){
         out.push('<div class="lunch">Pause méridienne · ' + SLOTS[LUNCH_SLOTS[0]].debut +
           " – " + SLOTS[LUNCH_SLOTS[LUNCH_SLOTS.length-1]].fin + "</div>");
       }
@@ -1720,17 +1734,23 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     var cs = currentSlot();
     var out = [];
 
+    // Une ligne par créneau, plus basse pour la pause.
+    grid.style.gridTemplateRows = "auto " + SLOTS.map(function(c){
+      return c.pause ? "34px" : "minmax(80px,auto)";
+    }).join(" ");
+
     DAYS.forEach(function(name, i){
       out.push('<div class="dhead" style="grid-column:' + (i+2) + '"' +
         (i === todayIdx ? ' data-today="1"' : "") + '><span class="dh-name">' +
         name.charAt(0).toUpperCase() + name.slice(1) + "</span></div>");
     });
 
-    for(var s = 0; s < 9; s++){
+    for(var s = 0; s < SLOTS.length; s++){
       out.push('<div class="hcell" style="grid-row:' + (s+2) + '"' +
         (s === cs ? ' data-current="1"' : "") + ">" + hourTag(s, 1) + "</div>");
     }
-    out.push('<div class="lunchband">Pause méridienne</div>');
+    out.push('<div class="lunchband" style="grid-row:' + (LUNCH_SLOTS[0] + 2) +
+      "/span " + LUNCH_SLOTS.length + '">Pause méridienne</div>');
 
     var covered = {};
     vis.forEach(function(c){
@@ -1738,7 +1758,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     });
 
     for(var d = 0; d < 5; d++){
-      for(var s2 = 0; s2 < 9; s2++){
+      for(var s2 = 0; s2 < SLOTS.length; s2++){
         var here = vis.filter(function(c){ return c.d === d && c.s === s2; });
         if(here.length){
           var span = here.reduce(function(m,c){ return Math.max(m, c.n || 1); }, 1);
@@ -1941,6 +1961,7 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
 
   /* ============ démarrage ============ */
   buildSelects();
+  migrerHoraires();
   purgerDevoirs();
   loadLook();
   applyLook();
