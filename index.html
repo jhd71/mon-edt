@@ -374,6 +374,9 @@ dialog{
   color:var(--ink);
 }
 dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
+/* La barre de défilement garde sa place : pas de saut latéral quand une
+   fenêtre fige la page. */
+html{scrollbar-gutter:stable}
 .sheet{
   background:var(--surface);border:1px solid var(--line);border-radius:20px;
   box-shadow:var(--shadow-md);overflow:hidden;
@@ -1600,6 +1603,51 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     }).join("");
   }
 
+  /* ============ fenêtres : fond figé ============ */
+  /* Une fenêtre ouverte doit laisser la page immobile derrière elle. Mettre
+     overflow:hidden sur la page suffirait à bloquer le défilement, mais il
+     la ramène aussitôt tout en haut. On fige donc le corps à sa position
+     actuelle, et on la rend au moment de refermer.
+     Le crochet est posé une fois sur showModal plutôt qu'aux huit endroits
+     qui ouvrent une fenêtre. */
+  (function(){
+    var positionY = 0, ouvertes = 0;
+    var ouvrirNatif = HTMLDialogElement.prototype.showModal;
+
+    HTMLDialogElement.prototype.showModal = function(){
+      if(ouvertes === 0){
+        positionY = window.scrollY || document.documentElement.scrollTop || 0;
+        var c = document.body.style;
+        c.position = "fixed";
+        c.top = (-positionY) + "px";
+        c.left = "0";
+        c.right = "0";
+        c.width = "100%";
+      }
+      ouvertes++;
+      ouvrirNatif.call(this);
+    };
+
+    // « close » ne remonte pas dans l'arbre : on l'écoute en phase de capture.
+    document.addEventListener("close", function(){
+      ouvertes = Math.max(0, ouvertes - 1);
+      if(ouvertes > 0) return;
+      // En se refermant, la fenêtre rend le focus au bouton qui l'avait
+      // ouverte, et le navigateur fait défiler jusqu'à lui — donc en haut de
+      // page quand ce bouton est dans l'en-tête. On laisse donc le corps figé
+      // le temps que ça se produise : rien ne peut bouger tant qu'il l'est.
+      requestAnimationFrame(function(){
+        if(ouvertes > 0) return;          // une autre fenêtre a pris le relais
+        var c = document.body.style;
+        c.position = ""; c.top = ""; c.left = ""; c.right = ""; c.width = "";
+        // Le corps figé avait ôté sa hauteur à la page : cette lecture force
+        // le recalcul, sans quoi le retour à la position est écrêté à zéro.
+        void document.body.offsetHeight;
+        window.scrollTo(0, positionY);
+      });
+    }, true);
+  })();
+
   /* ============ menu ============ */
   function imprimerSemaine(){
     // On imprime toujours la grille de la semaine, même si elle regardait
@@ -1640,6 +1688,14 @@ dialog::backdrop{background:rgba(38,26,45,.42);backdrop-filter:blur(3px)}
     document.getElementById("menuInstaller").hidden = dejaInstallee;
     menuDlg.showModal();
   });
+  // Toucher le fond referme les fenêtres qu'on ne fait que lire : c'est le
+  // même geste que le bouton de fermeture. Les formulaires (cours, devoir,
+  // code) en sont exclus — un doigt qui glisse ne doit pas effacer une saisie.
+  ["menuDlg", "aideDlg", "lookDlg", "howtoDlg"].forEach(function(id){
+    var d = document.getElementById(id);
+    d.addEventListener("click", function(e){ if(e.target === d) d.close(); });
+  });
+
   document.getElementById("menuFermer").addEventListener("click", function(){ menuDlg.close(); });
   document.getElementById("aideFermer").addEventListener("click", function(){ aideDlg.close(); });
 
